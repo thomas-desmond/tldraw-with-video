@@ -2,12 +2,21 @@
 	"name": "tldraw-sync-cloudflare",
 	"private": true,
 	"version": "0.0.0",
-	"author": { "name": "tldraw GB Ltd.", "email": "hello@tldraw.com" },
+	"author": {
+		"name": "tldraw GB Ltd.",
+		"email": "hello@tldraw.com"
+	},
 	"homepage": "https://tldraw.dev",
 	"license": "MIT",
 	"type": "module",
-	"scripts": { "dev": "vite", "build": "tsc && vite build", "preview": "vite preview" },
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc && vite build",
+		"preview": "vite preview"
+	},
 	"dependencies": {
+		"@cloudflare/realtimekit-react": "^1.2.3",
+		"@cloudflare/realtimekit-react-ui": "^1.0.8",
 		"@tldraw/sync": "^3.15.4",
 		"@tldraw/sync-core": "^3.15.4",
 		"@tldraw/tlschema": "^3.15.4",

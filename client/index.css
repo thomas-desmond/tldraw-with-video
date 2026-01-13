@@ -5,3 +5,10 @@ body {
 	font-family: 'Inter', sans-serif;
 	overscroll-behavior: none;
 }
+
+/* RtkParticipantTile styling */
+rtk-participant-tile {
+	display: block;
+	width: 100%;
+	height: 100%;
+}

@@ -3,8 +3,19 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRealtimeKitClient } from '@cloudflare/realtimekit-react'
 import { RtkUiProvider, RtkParticipantsAudio, RtkParticipantTile } from '@cloudflare/realtimekit-react-ui'
 
-// In production, get this from your auth API
-const AUTH_TOKEN = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcmdJZCI6IjdlNjZiYjY3LWEzZTItNDYxYi05ZWFkLWQzZTQzMThlNDBhZCIsIm1lZXRpbmdJZCI6ImJiYjRhNGU5LTgwMmMtNGQyMy1iNjIxLTg0YjIwNGE3YjY2ZCIsInBhcnRpY2lwYW50SWQiOiJhYWFlYjdmZi03NmQ1LTQxMTYtYjliNS03MmVlYjZkNWY4NTkiLCJwcmVzZXRJZCI6IjI4YzViYjY2LTU4OWYtNGUwZi04N2JmLTFkMTc0Nzg1ODUxMCIsImlhdCI6MTc2ODMyNDg3MCwiZXhwIjoxNzY4OTI5NjcwfQ.HsSymNm0ZMcQHAcHER5rt9kurFTGeDtWOdVledrjUpxXeRqiXXNNJzLl9XTyKczrtEvbOm_goJkATyhwOLhqFj6vH4V-S3jpYwAuWZkQ_z7Su7Rvd9oBQAQ3IzlvSJAQ8dGdo9qHmJsmHx6_Np1uiqGMWwZkuYjd0EUKGLo3v7QZKUTSIu9beR5q8tdE2ygK4gsTXRyp7XAeiTSf3pv9rQlHVuVj1xnYdgof1rkIFZ--W7r03xhH-J0-AJJ-leNUwWxxZyLDmgXtu1fg_P6-4BNJwl2UR1vZR_2crthQfh4h7yeZYN7gHALNKvfwi5AJQvWe3O3R2iuq5etgJfxzrg'
+// Fetch auth token from our backend Worker
+async function getAuthToken(name?: string): Promise<string> {
+	const response = await fetch('/api/rtk/auth', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ name: name || 'Anonymous' }),
+	})
+	if (!response.ok) {
+		throw new Error(`Auth failed: ${response.status}`)
+	}
+	const data = await response.json() as { authToken: string }
+	return data.authToken
+}
 
 // Video grid component - shows all participants
 function VideoGrid({ meeting }: { meeting: any }) {
@@ -27,20 +38,39 @@ function VideoGrid({ meeting }: { meeting: any }) {
 		}
 	}, [meeting])
 
+	// Calculate grid layout - keep tiles big
+	const getGridColumns = () => {
+		if (participants.length <= 1) return '1fr'
+		if (participants.length <= 2) return 'repeat(2, 1fr)'
+		if (participants.length <= 4) return 'repeat(2, 1fr)'
+		return 'repeat(3, 1fr)'
+	}
+
 	return (
 		<div style={{
 			display: 'grid',
-			gridTemplateColumns: participants.length <= 1 ? '1fr' : participants.length <= 4 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-			gap: 6, padding: 6, flex: 1, overflow: 'auto', alignContent: 'start',
+			gridTemplateColumns: getGridColumns(),
+			gap: 12,
+			padding: 12,
+			flex: 1,
+			overflow: 'auto',
+			alignContent: 'start',
+			minHeight: 300,
 		}}>
 			{participants.map(p => (
 				<div key={p.id} style={{
-					aspectRatio: '4/3', background: '#2a2a2a', borderRadius: 8, overflow: 'hidden', position: 'relative',
+					aspectRatio: '4/3',
+					background: '#2a2a2a',
+					borderRadius: 10,
+					overflow: 'hidden',
+					position: 'relative',
+					minWidth: 250,
+					minHeight: 188,
 				}}>
 					<RtkParticipantTile participant={p} />
 					<div style={{
-						position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.6)',
-						color: 'white', padding: '2px 6px', borderRadius: 4, fontSize: 10,
+						position: 'absolute', bottom: 8, left: 8, background: 'rgba(0,0,0,0.7)',
+						color: 'white', padding: '4px 10px', borderRadius: 6, fontSize: 14, fontWeight: 500,
 					}}>
 						{p.name || (p.id === meeting.self.id ? 'You' : 'Guest')}
 					</div>
@@ -56,16 +86,20 @@ export function VideoPanel() {
 	const [isJoined, setIsJoined] = useState(false)
 	const [audioOn, setAudioOn] = useState(true)
 	const [videoOn, setVideoOn] = useState(true)
+	const [captionsOn, setCaptionsOn] = useState(false)
+	const [currentCaption, setCurrentCaption] = useState('')
 
 	// Draggable state
 	const [pos, setPos] = useState({ x: 80, y: 80 })
 	const [dragging, setDragging] = useState(false)
 	const dragRef = useRef({ x: 0, y: 0 })
 
-	// Initialize meeting
+	// Initialize meeting - fetch auth token from backend
 	useEffect(() => {
 		if (isOpen && !meeting) {
-			initMeeting({ authToken: AUTH_TOKEN, defaults: { audio: true, video: true } })
+			getAuthToken().then((authToken) => {
+				initMeeting({ authToken, defaults: { audio: true, video: true } })
+			}).catch(console.error)
 		}
 	}, [isOpen, meeting, initMeeting])
 
@@ -76,9 +110,36 @@ export function VideoPanel() {
 				await meeting.self.enableVideo()
 				await meeting.self.enableAudio()
 				setIsJoined(true)
+				// Expose meeting to window for debugging
+				;(window as any).meeting = meeting
+				console.log('Meeting joined! Access via window.meeting')
+				console.log('AI object:', meeting.ai)
 			}).catch(console.error)
 		}
 	}, [meeting, isOpen, isJoined])
+
+	// Listen for transcripts
+	useEffect(() => {
+		if (!meeting || !isJoined || !captionsOn) return
+		
+		const handleTranscript = (data: any) => {
+			console.log('Transcript received:', data)
+			const text = data.transcript || data.text || ''
+			const name = data.name || 'Unknown'
+			if (text) {
+				setCurrentCaption(`${name}: ${text}`)
+				// Clear caption after 5 seconds if no new one
+				setTimeout(() => setCurrentCaption(prev => prev === `${name}: ${text}` ? '' : prev), 5000)
+			}
+		}
+		
+		meeting.ai?.on('transcript', handleTranscript)
+		console.log('Transcript listener attached')
+		
+		return () => {
+			meeting.ai?.off('transcript', handleTranscript)
+		}
+	}, [meeting, isJoined, captionsOn])
 
 	// Handlers
 	const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -119,27 +180,27 @@ export function VideoPanel() {
 		)
 	}
 
-	// Draggable modal
+	// Draggable modal - large size for demo visibility
 	return (
 		<div
 			onMouseMove={onDragMove} onMouseUp={onDragEnd} onMouseLeave={onDragEnd}
 			style={{
-				position: 'fixed', left: pos.x, top: pos.y, width: 400, zIndex: 2000,
-				borderRadius: 12, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+				position: 'fixed', left: pos.x, top: pos.y, width: 640, minHeight: 480, zIndex: 2000,
+				borderRadius: 14, overflow: 'hidden', boxShadow: '0 12px 48px rgba(0,0,0,0.6)',
 				display: 'flex', flexDirection: 'column', background: '#1a1a1a',
 			}}
 		>
 			{/* Header - drag handle */}
 			<div onMouseDown={onDragStart} style={{
-				padding: '10px 14px', background: '#252525', cursor: dragging ? 'grabbing' : 'grab',
+				padding: '14px 18px', background: '#252525', cursor: dragging ? 'grabbing' : 'grab',
 				display: 'flex', justifyContent: 'space-between', alignItems: 'center',
 				userSelect: 'none', borderBottom: '1px solid #333',
 			}}>
-				<span style={{ color: 'white', fontWeight: 'bold', fontSize: 14 }}>
+				<span style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>
 					Video Call {isJoined && '• Live'}
 				</span>
 				<button onClick={handleClose} style={{
-					background: 'transparent', border: 'none', color: '#999', fontSize: 20, cursor: 'pointer',
+					background: 'transparent', border: 'none', color: '#999', fontSize: 24, cursor: 'pointer',
 				}}>×</button>
 			</div>
 
@@ -155,16 +216,30 @@ export function VideoPanel() {
 				</div>
 			)}
 
-			{/* Controls */}
+			{/* Captions display - large text for demo visibility */}
+			{isJoined && captionsOn && currentCaption && (
+				<div style={{
+					padding: '14px 20px', background: 'rgba(0,0,0,0.9)', color: 'white',
+					fontSize: 20, fontWeight: 500, textAlign: 'center', borderTop: '1px solid #333',
+					lineHeight: 1.4,
+				}}>
+					{currentCaption}
+				</div>
+			)}
+
+			{/* Controls - larger for demo visibility */}
 			{isJoined && (
-				<div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: 10, borderTop: '1px solid #333' }}>
-					<button onClick={toggleAudio} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: audioOn ? '#333' : '#555', color: 'white', cursor: 'pointer' }}>
+				<div style={{ display: 'flex', justifyContent: 'center', gap: 12, padding: 14, borderTop: '1px solid #333' }}>
+					<button onClick={toggleAudio} style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: audioOn ? '#333' : '#555', color: 'white', cursor: 'pointer', fontSize: 18 }}>
 						{audioOn ? '🎤' : '🔇'}
 					</button>
-					<button onClick={toggleVideo} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: videoOn ? '#333' : '#555', color: 'white', cursor: 'pointer' }}>
+					<button onClick={toggleVideo} style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: videoOn ? '#333' : '#555', color: 'white', cursor: 'pointer', fontSize: 18 }}>
 						{videoOn ? '📹' : '📷'}
 					</button>
-					<button onClick={handleClose} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#dc3545', color: 'white', cursor: 'pointer' }}>
+					<button onClick={() => setCaptionsOn(!captionsOn)} style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: captionsOn ? '#F48120' : '#333', color: 'white', cursor: 'pointer', fontSize: 16, fontWeight: 'bold' }}>
+						CC
+					</button>
+					<button onClick={handleClose} style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: '#dc3545', color: 'white', cursor: 'pointer', fontSize: 16 }}>
 						Leave
 					</button>
 				</div>

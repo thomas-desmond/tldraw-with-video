@@ -4,6 +4,7 @@ main = "worker/worker.ts"
 compatibility_date = "2025-05-08"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
+account_id = "d6850012d250c1600028b55d1d879b16"
 
 [assets]
 not_found_handling = "single-page-application"

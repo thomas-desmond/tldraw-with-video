@@ -88,6 +88,7 @@ export function VideoPanel() {
 	const [videoOn, setVideoOn] = useState(true)
 	const [captionsOn, setCaptionsOn] = useState(false)
 	const [currentCaption, setCurrentCaption] = useState('')
+	const [recordingOn, setRecordingOn] = useState(false)
 
 	// Draggable state
 	const [pos, setPos] = useState({ x: 80, y: 80 })
@@ -190,6 +191,13 @@ export function VideoPanel() {
 				display: 'flex', flexDirection: 'column', background: '#1a1a1a',
 			}}
 		>
+			{/* Pulse animation for recording indicator */}
+			<style>{`
+				@keyframes pulse {
+					0%, 100% { opacity: 1; }
+					50% { opacity: 0.4; }
+				}
+			`}</style>
 			{/* Header - drag handle */}
 			<div onMouseDown={onDragStart} style={{
 				padding: '14px 18px', background: '#252525', cursor: dragging ? 'grabbing' : 'grab',
@@ -238,6 +246,10 @@ export function VideoPanel() {
 					</button>
 					<button onClick={() => setCaptionsOn(!captionsOn)} style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: captionsOn ? '#F48120' : '#333', color: 'white', cursor: 'pointer', fontSize: 16, fontWeight: 'bold' }}>
 						CC
+					</button>
+					<button onClick={() => setRecordingOn(!recordingOn)} style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: recordingOn ? '#dc3545' : '#333', color: 'white', cursor: 'pointer', fontSize: 16, fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 6 }}>
+						<span style={{ width: 10, height: 10, borderRadius: '50%', background: recordingOn ? 'white' : '#dc3545', animation: recordingOn ? 'pulse 1.5s infinite' : 'none' }}></span>
+						REC
 					</button>
 					<button onClick={handleClose} style={{ padding: '12px 24px', borderRadius: 8, border: 'none', background: '#dc3545', color: 'white', cursor: 'pointer', fontSize: 16 }}>
 						Leave

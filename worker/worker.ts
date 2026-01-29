@@ -6,15 +6,15 @@ import { handleAssetDownload, handleAssetUpload } from './assetUploads'
 export { TldrawDurableObject } from './TldrawDurableObject'
 
 // RealtimeKit configuration
-const RTK_ACCOUNT_ID = '6ea501058781ea3447393e05a0296f58'
-const RTK_APP_ID = '7e66bb67-a3e2-461b-9ead-d3e4318e40ad'
+const RTK_ACCOUNT_ID = 'd6850012d250c1600028b55d1d879b16'
+const RTK_APP_ID = 'fad83e63-3310-4aa4-a778-2f2a29ef36c9'
 
 // Demo meeting (tldraw whiteboard video)
-const RTK_DEMO_MEETING_ID = 'bbb4a4e9-802c-4d23-b621-84b204a7b66d'
+const RTK_DEMO_MEETING_ID = 'bbbf7132-8f91-4f57-b9b5-ad5a91fd5aa1'
 const RTK_DEMO_PRESET = 'group_call_host'
 
 // Audience meeting (Tech Summit participation)
-const RTK_AUDIENCE_MEETING_ID = 'bbb40bb9-de44-480d-88d6-71b84044863f'
+const RTK_AUDIENCE_MEETING_ID = 'bbb821a5-bfb3-498e-aaa3-f1f0a33277f4'
 const RTK_AUDIENCE_PRESET = 'audience_preset'
 
 // Helper function to create a participant in a meeting

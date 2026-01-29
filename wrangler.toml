@@ -1,5 +1,5 @@
 
-name = "tldraw-worker"
+name = "tldraw-realtime-demo"
 main = "worker/worker.ts"
 compatibility_date = "2025-05-08"
 compatibility_flags = ["nodejs_compat"]
@@ -27,5 +27,5 @@ new_classes = ["TldrawDurableObject"]
 # We store rooms and asset uploads in an R2 bucket
 [[r2_buckets]]
 binding = 'TLDRAW_BUCKET'
-bucket_name = 'tldraw-test'
-preview_bucket_name = 'tldraw-test-preview'
+bucket_name = 'tldraw-realtime-demo'
+preview_bucket_name = 'tldraw-realtime-demo-preview'

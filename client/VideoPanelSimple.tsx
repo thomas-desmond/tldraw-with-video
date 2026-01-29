@@ -119,28 +119,39 @@ export function VideoPanel() {
 		}
 	}, [meeting, isOpen, isJoined])
 
-	// Listen for transcripts
+	// Listen for transcripts - attach listener once when joined, regardless of captionsOn state
 	useEffect(() => {
-		if (!meeting || !isJoined || !captionsOn) return
+		if (!meeting || !isJoined) return
 		
 		const handleTranscript = (data: any) => {
-			console.log('Transcript received:', data)
-			const text = data.transcript || data.text || ''
-			const name = data.name || 'Unknown'
+			// Try multiple possible field names for the transcript text
+			const text = data.transcript || data.text || data.message || data.content || ''
+			const name = data.name || data.participantName || data.speaker || 'Speaker'
 			if (text) {
-				setCurrentCaption(`${name}: ${text}`)
-				// Clear caption after 5 seconds if no new one
-				setTimeout(() => setCurrentCaption(prev => prev === `${name}: ${text}` ? '' : prev), 5000)
+				const caption = `${name}: ${text}`
+				setCurrentCaption(caption)
+				// Clear caption after 6 seconds if no new one
+				setTimeout(() => setCurrentCaption(prev => prev === caption ? '' : prev), 6000)
 			}
 		}
 		
-		meeting.ai?.on('transcript', handleTranscript)
-		console.log('Transcript listener attached')
+		// Try attaching to meeting.ai for transcripts
+		if (meeting.ai) {
+			meeting.ai.on('transcript', handleTranscript)
+			meeting.ai.on('transcription', handleTranscript)
+		}
+		
+		// Also try listening on the meeting object directly
+		meeting.on?.('transcript', handleTranscript)
+		meeting.on?.('transcription', handleTranscript)
 		
 		return () => {
 			meeting.ai?.off('transcript', handleTranscript)
+			meeting.ai?.off('transcription', handleTranscript)
+			meeting.off?.('transcript', handleTranscript)
+			meeting.off?.('transcription', handleTranscript)
 		}
-	}, [meeting, isJoined, captionsOn])
+	}, [meeting, isJoined])
 
 	// Handlers
 	const onDragStart = useCallback((e: React.MouseEvent) => {
@@ -171,9 +182,9 @@ export function VideoPanel() {
 	if (!isOpen) {
 		return (
 			<button onClick={() => setIsOpen(true)} style={{
-				position: 'absolute', bottom: 20, right: 20, zIndex: 1000,
-				padding: '12px 24px', fontSize: 16, fontWeight: 'bold', cursor: 'pointer',
-				backgroundColor: '#F48120', color: 'white', border: 'none', borderRadius: 8,
+				position: 'absolute', bottom: 40, right: 20, zIndex: 1000,
+				padding: '16px 32px', fontSize: 18, fontWeight: 'bold', cursor: 'pointer',
+				backgroundColor: '#F48120', color: 'white', border: 'none', borderRadius: 10,
 				boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
 			}}>
 				Join Video Call
@@ -214,10 +225,11 @@ export function VideoPanel() {
 
 			{/* Video content */}
 			{meeting && isJoined ? (
-				<RtkUiProvider meeting={meeting}>
-					<RtkParticipantsAudio />
-					<VideoGrid meeting={meeting} />
-				</RtkUiProvider>
+				<></>
+				// <RtkUiProvider meeting={meeting}>
+				// 	<RtkParticipantsAudio />
+				// 	<VideoGrid meeting={meeting} />
+				// </RtkUiProvider>
 			) : (
 				<div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
 					{meeting ? 'Joining...' : 'Connecting...'}
@@ -225,13 +237,14 @@ export function VideoPanel() {
 			)}
 
 			{/* Captions display - large text for demo visibility */}
-			{isJoined && captionsOn && currentCaption && (
+			{isJoined && captionsOn && (
 				<div style={{
 					padding: '14px 20px', background: 'rgba(0,0,0,0.9)', color: 'white',
 					fontSize: 20, fontWeight: 500, textAlign: 'center', borderTop: '1px solid #333',
 					lineHeight: 1.4,
+					minHeight: 56,
 				}}>
-					{currentCaption}
+					{currentCaption || <span style={{ color: '#666', fontStyle: 'italic' }}>Listening for speech...</span>}
 				</div>
 			)}
 

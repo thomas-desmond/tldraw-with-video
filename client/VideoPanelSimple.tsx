@@ -225,11 +225,10 @@ export function VideoPanel() {
 
 			{/* Video content */}
 			{meeting && isJoined ? (
-				<></>
-				// <RtkUiProvider meeting={meeting}>
-				// 	<RtkParticipantsAudio />
-				// 	<VideoGrid meeting={meeting} />
-				// </RtkUiProvider>
+				<RtkUiProvider meeting={meeting}>
+					<RtkParticipantsAudio />
+					<VideoGrid meeting={meeting} />
+				</RtkUiProvider>
 			) : (
 				<div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
 					{meeting ? 'Joining...' : 'Connecting...'}

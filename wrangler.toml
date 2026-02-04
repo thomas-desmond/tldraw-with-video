@@ -5,6 +5,8 @@ compatibility_date = "2025-05-08"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 account_id = "d6850012d250c1600028b55d1d879b16"
+workers_dev = false
+preview_urls = false
 
 [assets]
 not_found_handling = "single-page-application"
@@ -28,4 +30,8 @@ new_classes = ["TldrawDurableObject"]
 [[r2_buckets]]
 binding = 'TLDRAW_BUCKET'
 bucket_name = 'tldraw-realtime-demo'
-preview_bucket_name = 'tldraw-realtime-demo-preview'
+
+[[routes]]
+pattern = "realtime-video.cloudflaredemos.com"
+zone_name = "cloudflaredemos.com"
+custom_domain = true
